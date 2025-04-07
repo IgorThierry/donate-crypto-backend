@@ -13,7 +13,7 @@ struct Campaign {
 }
 
 contract DonateCrypto {
-    uint256 public fee = 100; // wei
+    uint256 public donateFee = 100; //taxa fixa por campanha - 100 wei
     uint256 public nextId = 0;
 
     mapping(uint256 => Campaign) public campaigns; // id => campanha
@@ -37,9 +37,24 @@ contract DonateCrypto {
     }
 
     function donate(uint256 id) public payable {
-        require(msg.value > fee, "Donation must be greater than fee");
-        require(campaigns[id].active, "Campaign is not active");
+        require(msg.value > 0, "You must send a donation value > 0");
+        require(campaigns[id].active == true, "Cannot donate to this campaign");
 
-        campaigns[id].balance += msg.value - fee;
+        campaigns[id].balance += msg.value;
+    }
+
+    function withdraw(uint256 campaignId) public {
+        Campaign memory campaign = campaigns[campaignId];
+        require(campaign.author == msg.sender, "You do not have permission");
+        require(campaign.active == true, "The campaign is closed");
+        require(campaign.balance > donateFee, "This campaign does not have enough balance");
+
+        address payable recipient = payable(campaign.author);
+
+        (bool success, ) = recipient.call{value: campaign.balance - donateFee}("");
+
+        require(success == true, "Failed to withdraw");
+        campaigns[campaignId].active = false;
+        campaigns[campaignId].balance = 0;
     }
 }
