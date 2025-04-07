@@ -35,4 +35,11 @@ contract DonateCrypto {
         nextId++;
         campaigns[nextId] = newCampaign;
     }
+
+    function donate(uint256 id) public payable {
+        require(msg.value > fee, "Donation must be greater than fee");
+        require(campaigns[id].active, "Campaign is not active");
+
+        campaigns[id].balance += msg.value - fee;
+    }
 }
