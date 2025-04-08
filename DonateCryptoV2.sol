@@ -42,6 +42,23 @@ contract DonateCrypto {
         campaigns[nextId] = newCampaign;
     }
 
+    function editCampaign(
+        uint256 id,
+        string calldata title,
+        string calldata description,
+        string calldata videoUrl,
+        string calldata imageUrl
+    ) public {
+        Campaign storage campaign = campaigns[id];
+        require(campaign.author == msg.sender, "You do not have permission");
+        require(campaign.active == true, "The campaign is closed");
+
+        campaign.title = title;
+        campaign.description = description;
+        campaign.videoUrl = videoUrl;
+        campaign.imageUrl = imageUrl;
+    }
+
     function donate(uint256 id) public payable {
         require(msg.value > 0, "You must send a donation value > 0");
         require(campaigns[id].active == true, "Cannot donate to this campaign");
