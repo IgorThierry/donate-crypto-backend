@@ -59,6 +59,17 @@ contract DonateCrypto {
         campaign.imageUrl = imageUrl;
     }
 
+    function getRecentCampaigns() public view returns (uint256[] memory) {
+        uint256 count = nextId < 5 ? nextId : 5; // Verifica se há menos de 5 campanhas
+        uint256[] memory recentCampaigns = new uint256[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            recentCampaigns[i] = nextId - i;
+        }
+
+        return recentCampaigns;
+    }
+
     function donate(uint256 id) public payable {
         require(msg.value > 0, "You must send a donation value > 0");
         require(campaigns[id].active == true, "Cannot donate to this campaign");
