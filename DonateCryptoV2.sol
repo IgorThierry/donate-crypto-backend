@@ -9,6 +9,7 @@ struct Campaign {
     string videoUrl;
     string imageUrl;
     uint256 balance;
+    uint256 supporters;
     bool active;
 }
 
@@ -75,6 +76,11 @@ contract DonateCrypto {
         require(campaigns[id].active == true, "Cannot donate to this campaign");
 
         campaigns[id].balance += msg.value;
+        campaigns[id].supporters += 1;
+    }
+
+    function getSupporters(uint256 id) public view returns (uint256) {
+        return campaigns[id].supporters;
     }
 
     function withdraw(uint256 campaignId) public {
