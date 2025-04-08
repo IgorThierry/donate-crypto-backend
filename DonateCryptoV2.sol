@@ -16,8 +16,13 @@ contract DonateCrypto {
     uint256 public donateFee = 100; //taxa fixa por campanha - 100 wei
     uint256 public nextId = 0;
     uint256 public feesBalance = 0;
+    address public admin;
 
     mapping(uint256 => Campaign) public campaigns; // id => campanha
+
+    constructor() {
+        admin = msg.sender; // define o deployer do contrato como admin
+    }
 
     function addCampaign(
         string calldata title,
@@ -60,5 +65,16 @@ contract DonateCrypto {
         feesBalance += donateFee;
 
         campaigns[campaignId].active = false;
+    }
+
+    function adminWithdrawFees() public {
+        require(msg.sender == admin, "Only the admin can withdraw fees");
+        require(feesBalance > 0, "No fees available to withdraw");
+
+        uint256 amount = feesBalance;
+        feesBalance = 0;
+
+        (bool success, ) = payable(admin).call{value: amount}("");
+        require(success == true, "Failed to withdraw fees");
     }
 }
