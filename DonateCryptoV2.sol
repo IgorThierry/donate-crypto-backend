@@ -60,6 +60,5 @@ contract DonateCrypto {
         feesBalance += donateFee;
 
         campaigns[campaignId].active = false;
-        campaigns[campaignId].balance = 0;
     }
 }
