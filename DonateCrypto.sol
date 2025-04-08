@@ -55,6 +55,6 @@ contract DonateCrypto {
 
         require(success == true, "Failed to withdraw");
         campaigns[campaignId].active = false;
-        campaigns[campaignId].balance = 0;
+        // campaigns[campaignId].balance = 0;
     }
 }
