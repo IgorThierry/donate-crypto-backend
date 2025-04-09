@@ -9,14 +9,21 @@ struct Campaign {
     string videoUrl;
     string imageUrl;
     uint256 balance;
+    uint256 supporters;
     bool active;
 }
 
 contract DonateCrypto {
     uint256 public donateFee = 100; //taxa fixa por campanha - 100 wei
     uint256 public nextId = 0;
+    uint256 public feesBalance = 0;
+    address public admin;
 
     mapping(uint256 => Campaign) public campaigns; // id => campanha
+
+    constructor() {
+        admin = msg.sender; // define o deployer do contrato como admin
+    }
 
     function addCampaign(
         string calldata title,
@@ -36,11 +43,44 @@ contract DonateCrypto {
         campaigns[nextId] = newCampaign;
     }
 
+    function editCampaign(
+        uint256 id,
+        string calldata title,
+        string calldata description,
+        string calldata videoUrl,
+        string calldata imageUrl
+    ) public {
+        Campaign storage campaign = campaigns[id];
+        require(campaign.author == msg.sender, "You do not have permission");
+        require(campaign.active == true, "The campaign is closed");
+
+        campaign.title = title;
+        campaign.description = description;
+        campaign.videoUrl = videoUrl;
+        campaign.imageUrl = imageUrl;
+    }
+
+    function getRecentCampaigns() public view returns (Campaign[] memory) {
+        uint256 count = nextId < 5 ? nextId : 5; // Verifica se há menos de 5 campanhas
+        Campaign[] memory recentCampaigns = new Campaign[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            recentCampaigns[i] = campaigns[nextId - i];
+        }
+
+        return recentCampaigns;
+    }
+
     function donate(uint256 id) public payable {
         require(msg.value > 0, "You must send a donation value > 0");
         require(campaigns[id].active == true, "Cannot donate to this campaign");
 
         campaigns[id].balance += msg.value;
+        campaigns[id].supporters += 1;
+    }
+
+    function getSupporters(uint256 id) public view returns (uint256) {
+        return campaigns[id].supporters;
     }
 
     function withdraw(uint256 campaignId) public {
@@ -51,10 +91,24 @@ contract DonateCrypto {
 
         address payable recipient = payable(campaign.author);
 
-        (bool success, ) = recipient.call{value: campaign.balance - donateFee}("");
+        uint256 amountToWithdraw = campaign.balance - donateFee;
 
+        (bool success, ) = recipient.call{value: amountToWithdraw}("");
         require(success == true, "Failed to withdraw");
+
+        feesBalance += donateFee;
+
         campaigns[campaignId].active = false;
-        // campaigns[campaignId].balance = 0;
+    }
+
+    function adminWithdrawFees() public {
+        require(msg.sender == admin, "Only the admin can withdraw fees");
+        require(feesBalance > 0, "No fees available to withdraw");
+
+        uint256 amount = feesBalance;
+        feesBalance = 0;
+
+        (bool success, ) = payable(admin).call{value: amount}("");
+        require(success == true, "Failed to withdraw fees");
     }
 }
