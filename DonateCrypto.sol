@@ -11,6 +11,8 @@ struct Campaign {
     uint256 balance;
     uint256 supporters;
     bool active;
+    uint256 createdAt;
+    uint256 id;
 }
 
 contract DonateCrypto {
@@ -31,15 +33,21 @@ contract DonateCrypto {
         string calldata videoUrl,
         string calldata imageUrl
     ) public {
-        Campaign memory newCampaign;
-        newCampaign.title = title;
-        newCampaign.description = description;
-        newCampaign.videoUrl = videoUrl;
-        newCampaign.imageUrl = imageUrl;
-        newCampaign.active = true;
-        newCampaign.author = msg.sender;
-
         nextId++;
+
+        Campaign memory newCampaign = Campaign({
+            author: msg.sender,
+            title: title,
+            description: description,
+            videoUrl: videoUrl,
+            imageUrl: imageUrl,
+            balance: 0,
+            supporters: 0,
+            active: true,
+            createdAt: block.timestamp,
+            id: nextId
+        });
+
         campaigns[nextId] = newCampaign;
     }
 
@@ -79,15 +87,14 @@ contract DonateCrypto {
         campaigns[id].supporters += 1;
     }
 
-    function getSupporters(uint256 id) public view returns (uint256) {
-        return campaigns[id].supporters;
-    }
-
     function withdraw(uint256 campaignId) public {
         Campaign memory campaign = campaigns[campaignId];
         require(campaign.author == msg.sender, "You do not have permission");
         require(campaign.active == true, "The campaign is closed");
-        require(campaign.balance > donateFee, "This campaign does not have enough balance");
+        require(
+            campaign.balance > donateFee,
+            "This campaign does not have enough balance"
+        );
 
         address payable recipient = payable(campaign.author);
 
@@ -112,12 +119,12 @@ contract DonateCrypto {
         require(success == true, "Failed to withdraw fees");
     }
 
-    function getUserCampaigns(address user) public view returns (Campaign[] memory) {
+    function getUserCampaigns() public view returns (Campaign[] memory) {
         uint256 count = 0;
 
         // Contar quantas campanhas pertencem ao usuário
         for (uint256 i = 1; i <= nextId; i++) {
-            if (campaigns[i].author == user) {
+            if (campaigns[i].author == msg.sender) {
                 count++;
             }
         }
@@ -133,7 +140,7 @@ contract DonateCrypto {
 
         // Preencher o array com as campanhas do usuário
         for (uint256 i = 1; i <= nextId; i++) {
-            if (campaigns[i].author == user) {
+            if (campaigns[i].author == msg.sender) {
                 userCampaigns[index] = campaigns[i];
                 index++;
             }
