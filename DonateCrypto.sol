@@ -111,4 +111,34 @@ contract DonateCrypto {
         (bool success, ) = payable(admin).call{value: amount}("");
         require(success == true, "Failed to withdraw fees");
     }
+
+    function getUserCampaigns(address user) public view returns (Campaign[] memory) {
+        uint256 count = 0;
+
+        // Contar quantas campanhas pertencem ao usuário
+        for (uint256 i = 1; i <= nextId; i++) {
+            if (campaigns[i].author == user) {
+                count++;
+            }
+        }
+
+        // Retornar um array vazio se o usuário não tiver campanhas
+        if (count == 0) {
+            return new Campaign[](0);
+        }
+
+        // Criar um array para armazenar as campanhas do usuário
+        Campaign[] memory userCampaigns = new Campaign[](count);
+        uint256 index = 0;
+
+        // Preencher o array com as campanhas do usuário
+        for (uint256 i = 1; i <= nextId; i++) {
+            if (campaigns[i].author == user) {
+                userCampaigns[index] = campaigns[i];
+                index++;
+            }
+        }
+
+        return userCampaigns;
+    }
 }
