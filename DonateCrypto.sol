@@ -69,7 +69,7 @@ contract DonateCrypto {
     }
 
     function getRecentCampaigns() public view returns (Campaign[] memory) {
-        uint256 count = nextId < 5 ? nextId : 5; // Verifica se há menos de 5 campanhas
+        uint256 count = nextId < 6 ? nextId : 6; // Verifica se há menos de 6 campanhas
         Campaign[] memory recentCampaigns = new Campaign[](count);
 
         for (uint256 i = 0; i < count; i++) {
