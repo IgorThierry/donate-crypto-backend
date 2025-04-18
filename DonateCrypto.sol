@@ -23,6 +23,7 @@ contract DonateCrypto {
 
     mapping(uint256 => Campaign) public campaigns; // id => campanha
     mapping(address => uint256[]) public userCampaignIds; // endereço do usuário => ids das campanhas
+    mapping(uint256 => mapping(address => uint256)) public donations;
 
     constructor() {
         admin = msg.sender; // define o deployer do contrato como admin
@@ -89,6 +90,11 @@ contract DonateCrypto {
 
         campaigns[id].balance += msg.value;
         feesBalance += fee; // Adiciona a taxa ao feesBalance
+
+        if (donations[id][msg.sender] == 0) {
+            campaigns[id].supporters += 1;
+        }
+        donations[id][msg.sender] += msg.value;
     }
 
     function withdraw(uint256 campaignId) public {
