@@ -24,6 +24,7 @@ contract DonateCrypto {
     mapping(uint256 => Campaign) public campaigns; // id => campanha
     mapping(address => uint256[]) public userCampaignIds; // endereço do usuário => ids das campanhas
     mapping(uint256 => mapping(address => uint256)) public donations;
+    mapping(uint256 => address[]) public campaignDonors;
 
     constructor() {
         admin = msg.sender; // define o deployer do contrato como admin
@@ -93,6 +94,7 @@ contract DonateCrypto {
 
         if (donations[id][msg.sender] == 0) {
             campaigns[id].supporters += 1;
+            campaignDonors[id].push(msg.sender);
         }
         donations[id][msg.sender] += msg.value;
     }
@@ -151,5 +153,9 @@ contract DonateCrypto {
         }
 
         return (userCampaigns, totalPages);
+    }
+
+    function getDonors(uint256 campaignId) public view returns (address[] memory) {
+        return campaignDonors[campaignId];
     }
 }
