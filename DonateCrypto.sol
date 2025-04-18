@@ -22,6 +22,7 @@ contract DonateCrypto {
     address public admin;
 
     mapping(uint256 => Campaign) public campaigns; // id => campanha
+    mapping(address => uint256[]) public userCampaignIds; // endereço do usuário => ids das campanhas
 
     constructor() {
         admin = msg.sender; // define o deployer do contrato como admin
@@ -49,6 +50,7 @@ contract DonateCrypto {
         });
 
         campaigns[nextId] = newCampaign;
+        userCampaignIds[msg.sender].push(nextId);
     }
 
     function editCampaign(
@@ -117,33 +119,31 @@ contract DonateCrypto {
         feesBalance = 0;
     }
 
-    function getUserCampaigns() public view returns (Campaign[] memory) {
-        uint256 count = 0;
+    function getUserCampaigns(uint256 page) public view returns (Campaign[] memory, uint256) {
+        uint256 pageSize = 10;
+        uint256[] memory campaignIds = userCampaignIds[msg.sender];
+        uint256 total = campaignIds.length;
 
-        // Contar quantas campanhas pertencem ao usuário
-        for (uint256 i = 1; i <= nextId; i++) {
-            if (campaigns[i].author == msg.sender) {
-                count++;
-            }
+        if (page == 0 || total == 0 || (page - 1) * pageSize >= total) {
+            return (new Campaign[](0), 0);
         }
 
-        // Retornar um array vazio se o usuário não tiver campanhas
-        if (count == 0) {
-            return new Campaign[](0);
+        uint256 totalPages = (total + pageSize - 1) / pageSize; // arredonda para cima
+
+        uint256 start = (page - 1) * pageSize;
+        uint256 end = start + pageSize;
+        if (end > total) {
+            end = total;
+        }
+        uint256 resultSize = end - start;
+
+        Campaign[] memory userCampaigns = new Campaign[](resultSize);
+        for (uint256 i = 0; i < resultSize; i++) {
+            // Inverte a ordem: pega do índice mais alto para o mais baixo
+            uint256 idx = total - 1 - (start + i);
+            userCampaigns[i] = campaigns[campaignIds[idx]];
         }
 
-        // Criar um array para armazenar as campanhas do usuário
-        Campaign[] memory userCampaigns = new Campaign[](count);
-        uint256 index = 0;
-
-        // Preencher o array com as campanhas do usuário
-        for (uint256 i = 1; i <= nextId; i++) {
-            if (campaigns[i].author == msg.sender) {
-                userCampaigns[index] = campaigns[i];
-                index++;
-            }
-        }
-
-        return userCampaigns;
+        return (userCampaigns, totalPages);
     }
 }
