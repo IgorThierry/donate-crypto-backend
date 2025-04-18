@@ -16,7 +16,7 @@ struct Campaign {
 }
 
 contract DonateCrypto {
-    uint256 public donateFee = 100; //taxa fixa por campanha - 100 wei
+    uint256 public donateFee = 2; // taxa de 2%
     uint256 public nextId = 0;
     uint256 public feesBalance = 0;
     address public admin;
@@ -83,27 +83,25 @@ contract DonateCrypto {
         require(msg.value > 0, "You must send a donation value > 0");
         require(campaigns[id].active == true, "Cannot donate to this campaign");
 
+        uint256 fee = (msg.value * donateFee) / 100; // Calcula 2% de taxa
+
         campaigns[id].balance += msg.value;
-        campaigns[id].supporters += 1;
+        feesBalance += fee; // Adiciona a taxa ao feesBalance
     }
 
     function withdraw(uint256 campaignId) public {
         Campaign memory campaign = campaigns[campaignId];
         require(campaign.author == msg.sender, "You do not have permission");
         require(campaign.active == true, "The campaign is closed");
-        require(
-            campaign.balance > donateFee,
-            "This campaign does not have enough balance"
-        );
+        require(campaign.balance > 0, "This campaign does not have enough balance");
 
         address payable recipient = payable(campaign.author);
 
-        uint256 amountToWithdraw = campaign.balance - donateFee;
+        uint256 fee = (campaign.balance * donateFee) / 100;
+        uint256 amountToWithdraw = campaign.balance - fee;
 
         (bool success, ) = recipient.call{value: amountToWithdraw}("");
         require(success == true, "Failed to withdraw");
-
-        feesBalance += donateFee;
 
         campaigns[campaignId].active = false;
     }
@@ -113,10 +111,10 @@ contract DonateCrypto {
         require(feesBalance > 0, "No fees available to withdraw");
 
         uint256 amount = feesBalance;
-        feesBalance = 0;
 
         (bool success, ) = payable(admin).call{value: amount}("");
         require(success == true, "Failed to withdraw fees");
+        feesBalance = 0;
     }
 
     function getUserCampaigns() public view returns (Campaign[] memory) {
