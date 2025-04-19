@@ -83,7 +83,7 @@ contract DonateCrypto {
         campaign.imageUrl = imageUrl;
     }
 
-    function getRecentCampaigns() public view returns (Campaign[] memory) {
+    /* function getRecentCampaigns() public view returns (Campaign[] memory) {
         uint256 count = nextId < 6 ? nextId : 6; // Verifica se há menos de 6 campanhas
         Campaign[] memory recentCampaigns = new Campaign[](count);
 
@@ -92,6 +92,34 @@ contract DonateCrypto {
         }
 
         return recentCampaigns;
+    } */
+
+    function getRecentCampaigns(uint256 page) public view returns (Campaign[] memory, uint256) {
+        uint256 pageSize = 6;
+        uint256 total = nextId;
+
+        if (total == 0 || page == 0) {
+            return (new Campaign[](0), 0);
+        }
+
+        uint256 totalPages = (total + pageSize - 1) / pageSize;
+        if (page > totalPages) {
+            return (new Campaign[](0), totalPages);
+        }
+
+        uint256 startIdx = total - (page - 1) * pageSize;
+        uint256 endIdx = startIdx >= pageSize ? startIdx - pageSize + 1 : 1;
+        uint256 resultSize = startIdx - endIdx + 1;
+
+        Campaign[] memory recentCampaigns = new Campaign[](resultSize);
+        uint256 idx = 0;
+        for (uint256 i = startIdx; i >= endIdx; i--) {
+            recentCampaigns[idx] = campaigns[i];
+            idx++;
+            if (i == 1) break; // previne underflow
+        }
+
+        return (recentCampaigns, totalPages);
     }
 
     function donate(uint256 id) public payable {
