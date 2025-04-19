@@ -46,6 +46,17 @@ contract DonateCrypto {
     ) public {
         require(hasBeenHacked == false, "The contract has been hacked");
         require(canCreateCampaigns == true, "Cannot create campaigns at this time");
+
+        // Limite de 5 campanhas ativas por usuário
+        uint256 activeCount = 0;
+        uint256[] memory ids = userCampaignIds[msg.sender];
+        for (uint256 i = 0; i < ids.length; i++) {
+            if (campaigns[ids[i]].active) {
+                activeCount++;
+            }
+        }
+        require(activeCount < 10, "You can only have 10 active campaigns at a time");
+
         nextId++;
 
         Campaign memory newCampaign = Campaign({
