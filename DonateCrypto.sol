@@ -114,20 +114,21 @@ contract DonateCrypto {
     }
 
     function withdraw(uint256 campaignId) public {
-        Campaign memory campaign = campaigns[campaignId];
+        Campaign storage campaign = campaigns[campaignId];
         require(campaign.author == msg.sender, "You do not have permission");
         require(campaign.active == true, "The campaign is closed");
         require(campaign.balance > 0, "This campaign does not have enough balance");
 
-        address payable recipient = payable(campaign.author);
-
         uint256 fee = (campaign.balance * donateFee) / 100;
         uint256 amountToWithdraw = campaign.balance - fee;
+        address payable recipient = payable(campaign.author);
+
+        campaign.active = false;
 
         (bool success, ) = recipient.call{value: amountToWithdraw}("");
-        require(success == true, "Failed to withdraw");
-
-        campaigns[campaignId].active = false;
+        if (!success) {
+            revert("Failed to withdraw funds");
+        }
     }
 
     function getUserCampaigns(uint256 page) public view returns (Campaign[] memory, uint256) {
