@@ -3,16 +3,17 @@
 pragma solidity ^0.8.17;
 
 struct Campaign {
+    uint256 id;
     address author;
     string title;
     string description;
-    string videoUrl;
     string imageUrl;
+    string videoUrl;
     uint256 balance;
+    uint256 goal;
     uint256 supporters;
     bool active;
     uint256 createdAt;
-    uint256 id;
 }
 
 contract DonateCrypto {
@@ -26,6 +27,12 @@ contract DonateCrypto {
     mapping(uint256 => mapping(address => uint256)) public donations;
     mapping(uint256 => address[]) public campaignDonors;
 
+    // global flags
+    bool public hasBeenHacked = false;
+    bool public hasNewVersion = false;
+    bool public canCreateCampaigns = true;
+    bool public canReceiveDonations = true;
+
     constructor() {
         admin = msg.sender; // define o deployer do contrato como admin
     }
@@ -34,8 +41,11 @@ contract DonateCrypto {
         string calldata title,
         string calldata description,
         string calldata videoUrl,
-        string calldata imageUrl
+        string calldata imageUrl,
+        uint256 goal
     ) public {
+        require(hasBeenHacked == false, "The contract has been hacked");
+        require(canCreateCampaigns == true, "Cannot create campaigns at this time");
         nextId++;
 
         Campaign memory newCampaign = Campaign({
@@ -48,7 +58,8 @@ contract DonateCrypto {
             supporters: 0,
             active: true,
             createdAt: block.timestamp,
-            id: nextId
+            id: nextId,
+            goal: goal
         });
 
         campaigns[nextId] = newCampaign;
@@ -84,6 +95,9 @@ contract DonateCrypto {
     }
 
     function donate(uint256 id) public payable {
+        require(hasBeenHacked == false, "The contract has been hacked");
+        require(canReceiveDonations == true, "Cannot receive donations at this time");
+
         require(msg.value > 0, "You must send a donation value > 0");
         require(campaigns[id].active == true, "Cannot donate to this campaign");
 
@@ -116,17 +130,6 @@ contract DonateCrypto {
         campaigns[campaignId].active = false;
     }
 
-    function adminWithdrawFees() public {
-        require(msg.sender == admin, "Only the admin can withdraw fees");
-        require(feesBalance > 0, "No fees available to withdraw");
-
-        uint256 amount = feesBalance;
-
-        (bool success, ) = payable(admin).call{value: amount}("");
-        require(success == true, "Failed to withdraw fees");
-        feesBalance = 0;
-    }
-
     function getUserCampaigns(uint256 page) public view returns (Campaign[] memory, uint256) {
         uint256 pageSize = 10;
         uint256[] memory campaignIds = userCampaignIds[msg.sender];
@@ -157,5 +160,38 @@ contract DonateCrypto {
 
     function getDonors(uint256 campaignId) public view returns (address[] memory) {
         return campaignDonors[campaignId];
+    }
+
+    // Admin functions
+    function adminActivateHackedFlag() public {
+        require(msg.sender == admin, "Only the admin can do this");
+        require(!hasBeenHacked, "Already set");
+        hasBeenHacked = true;
+    }
+
+    function adminSetHasNewVersion(bool value) public {
+        require(msg.sender == admin, "Only the admin can do this");
+        hasNewVersion = value;
+    }
+
+    function adminSetCanCreateCampaigns(bool value) public {
+        require(msg.sender == admin, "Only the admin can do this");
+        canCreateCampaigns = value;
+    }
+
+    function adminSetCanDonate(bool value) public {
+        require(msg.sender == admin, "Only the admin can do this");
+        canReceiveDonations = value;
+    }
+
+    function adminWithdrawFees() public {
+        require(msg.sender == admin, "Only the admin can withdraw fees");
+        require(feesBalance > 0, "No fees available to withdraw");
+
+        uint256 amount = feesBalance;
+
+        (bool success, ) = payable(admin).call{value: amount}("");
+        require(success == true, "Failed to withdraw fees");
+        feesBalance = 0;
     }
 }
